@@ -39,8 +39,8 @@ jobs:
             fi
           fi
 
-          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
-          echo "previous_version=$previous_version" >> "$GITHUB_OUTPUT"
+          printf "current_version=%s\n" "$current_version" >> "$GITHUB_OUTPUT"
+          printf "previous_version=%s\n" "$previous_version" >> "$GITHUB_OUTPUT"
 
       - name: Decide if release is needed
         id: decision
@@ -49,13 +49,13 @@ jobs:
           previous="${{ steps.versions.outputs.previous_version }}"
 
           if [ -z "$previous" ]; then
-            echo "release=true" >> "$GITHUB_OUTPUT"
+            printf "release=%s\n" true >> "$GITHUB_OUTPUT"
             echo "No previous version detected; creating release for $current"
           elif [ "$current" != "$previous" ]; then
-            echo "release=true" >> "$GITHUB_OUTPUT"
+            printf "release=%s\n" true >> "$GITHUB_OUTPUT"
             echo "Version changed from $previous to $current"
           else
-            echo "release=false" >> "$GITHUB_OUTPUT"
+            printf "release=%s\n" false >> "$GITHUB_OUTPUT"
             echo "No version change detected; skipping release."
           fi
 
