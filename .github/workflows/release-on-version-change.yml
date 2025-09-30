@@ -18,6 +18,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: pnpm install
+      - run: pnpm test
+
       - name: Read package versions
         id: versions
         run: |
@@ -64,4 +70,4 @@ jobs:
           tag_name: ${{ steps.versions.outputs.current_version }}
           release_name: ${{ steps.versions.outputs.current_version }}
           body: |
-            Automated release for version ${{ steps.versions.outputs.current_version }}.
+            Automated release for version ${{ steps.versions.outputs.current_version }}
