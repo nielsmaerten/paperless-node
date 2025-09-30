@@ -1,0 +1,67 @@
+name: Release on Version Change
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read package versions
+        id: versions
+        run: |
+          current_version=$(jq -r '.version // ""' package.json)
+          if [ -z "$current_version" ]; then
+            echo "The current package.json does not define a version field." >&2
+            exit 1
+          fi
+
+          previous_version=""
+          if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+            previous_package=$(git show HEAD^:package.json 2>/dev/null || echo "")
+            if [ -n "$previous_package" ]; then
+              previous_version=$(jq -r '.version // ""' <<<"$previous_package")
+            fi
+          fi
+
+          echo "current_version=$current_version" >> "$GITHUB_OUTPUT"
+          echo "previous_version=$previous_version" >> "$GITHUB_OUTPUT"
+
+      - name: Decide if release is needed
+        id: decision
+        run: |
+          current="${{ steps.versions.outputs.current_version }}"
+          previous="${{ steps.versions.outputs.previous_version }}"
+
+          if [ -z "$previous" ]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "No previous version detected; creating release for $current"
+          elif [ "$current" != "$previous" ]; then
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "Version changed from $previous to $current"
+          else
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "No version change detected; skipping release."
+          fi
+
+      - name: Create GitHub release
+        if: steps.decision.outputs.release == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.versions.outputs.current_version }}
+          release_name: ${{ steps.versions.outputs.current_version }}
+          body: |
+            Automated release for version ${{ steps.versions.outputs.current_version }}.
