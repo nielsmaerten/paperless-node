@@ -1,6 +1,6 @@
 {
   "name": "paperless-node",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Type-safe client for the Paperless-ngx REST API",
   "type": "module",
   "keywords": [
