@@ -61,6 +61,10 @@ jobs:
 
       - name: Publish npm package
         if: steps.decision.outputs.release == 'true'
-        run: npm publish
+        run: |
+          npm install -g corepack
+          corepack enable
+          pnpm install
+          npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
