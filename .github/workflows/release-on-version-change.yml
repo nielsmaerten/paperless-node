@@ -59,13 +59,8 @@ jobs:
             echo "No version change detected; skipping release."
           fi
 
-      - name: Create GitHub release
+      - name: Publish npm package
         if: steps.decision.outputs.release == 'true'
-        uses: actions/create-release@v1
+        run: npm publish
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.versions.outputs.current_version }}
-          release_name: ${{ steps.versions.outputs.current_version }}
-          body: |
-            Automated release for version ${{ steps.versions.outputs.current_version }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
