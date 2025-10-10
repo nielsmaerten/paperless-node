@@ -2,8 +2,6 @@
 
 The snippets below mirror the flows covered by `tests/integration.test.ts`. They assume you have a running Paperless-ngx instance and that your environment variables (see `createOptionsFromEnv`) are set.
 
-> ℹ️ Run the integration scenarios locally with `RUN_INTEGRATION_TESTS=true pnpm vitest run tests/integration.test.ts`.
-
 ## Bootstrapping the client
 
 ```ts

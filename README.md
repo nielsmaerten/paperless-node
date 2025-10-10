@@ -1,13 +1,11 @@
 # paperless-node
 
-Type-safe TypeScript client for the Paperless-ngx REST API, generated from the official OpenAPI specification.
+Type-safe TypeScript client for the Paperless-ngx REST API. Based on the official [OpenAPI spec](https://docs.paperless-ngx.com/api/).
 
-## Features
-
-- HTTP client with automatic auth header injection and structured error handling.
-- Strongly typed resources for documents, correspondents, tags, document types, tasks, users, and authentication flows.
-- Helpers for working with environment variables and paginated endpoints.
-- `tsup` build pipeline with dual ESM/CJS output and bundled type definitions.
+[![package version](https://img.shields.io/npm/v/paperless-node?color=blue)](https://www.npmjs.com/package/paperless-node)
+[![typescript](https://img.shields.io/badge/TypeScript-4.9-blue?logo=typescript)](https://www.typescriptlang.org/)
+[![npm downloads](https://img.shields.io/npm/dm/paperless-node?color=orange)](https://www.npmjs.com/package/paperless-node)
+[![license](https://img.shields.io/npm/l/paperless-node?color=green)](https://opensource.org/licenses/MIT)
 
 ## Installation
 
@@ -15,66 +13,107 @@ Type-safe TypeScript client for the Paperless-ngx REST API, generated from the o
 pnpm add paperless-node
 # or
 npm install paperless-node
+yarn add paperless-node
 ```
 
-## Quick start
+## Getting started
+
+### Initialize the client
 
 ```ts
 import { createPaperlessClient } from 'paperless-node';
 
 const client = createPaperlessClient({
-  baseURL: process.env.PAPERLESS_BASE_URL!,
-  token: process.env.PAPERLESS_TOKEN,
+  baseURL: 'https://paperless.example.com',
+  token: 'example_api_key',
+});
+```
+> Tip: generate an API token from **Paper less-ngx → Profile → API tokens** and keep it secret.
+
+
+## Common use cases
+
+
+### Fetch the latest documents
+
+```ts
+const { results: documents } = await client.documents.list({
+  ordering: '-created',
+  page_size: 5,
 });
 
-const documents = await client.documents.list({ page_size: 10 });
-console.log(documents.results.map(doc => doc.title));
+documents.forEach(doc => {
+  console.log(`${doc.id} · ${doc.title}`);
+});
 ```
 
-More scenarios live in [`EXAMPLES.md`](./EXAMPLES.md), which mirrors the integration flows in the test suite.
-
-### Loading configuration from `.env`
+### Fetch available tags
 
 ```ts
-import { createOptionsFromEnv, createPaperlessClient } from 'paperless-node';
+const { results: tags } = await client.tags.list({ ordering: 'name' });
 
-const options = createOptionsFromEnv();
-const client = createPaperlessClient(options);
+tags.forEach(tag => {
+  console.log(`#${tag.id} ${tag.name} (${tag.document_count} docs)`);
+});
 ```
 
-Supported environment variables:
-
-- `PAPERLESS_BASE_URL` (required if not provided programmatically)
-- `PAPERLESS_TOKEN`
-- `PAPERLESS_TOKEN_PREFIX`
-- `PAPERLESS_AUTH_HEADER`
-
-## Working with documents
+### Get a tag's ID by name
 
 ```ts
-const { results } = await client.documents.list({ ordering: '-created' });
-const [first] = results;
+const tagName = 'invoices';
+const { results: matchingTags } = await client.tags.list({
+  name: tagName,
+});
 
-await client.documents.addNote(first.id, { note: 'Reviewed and filed.' });
-await client.documents.download(first.id, { responseType: 'stream' });
+const tagId = matchingTags[0]?.id;
 ```
 
-## Scripts
+### Upload a new document
 
-- `pnpm run generate` — regenerate TypeScript types from `docs/paperless-rest-api.yaml`.
-- `pnpm run build` — bundle ESM + CJS outputs and emit type declarations.
-- `pnpm run test` — run Vitest in watch mode.
-- `pnpm run test:run` — run the Vitest suite once.
-- `pnpm run typecheck` — ensure the project passes TypeScript checks.
+```ts
+import { createReadStream } from 'node:fs';
 
-## Development workflow
+const ingestionId = await client.documents.upload({
+  document: createReadStream('./receipts/2024-09-coffee.pdf'),
+  title: 'Coffee receipt — Sep 2024',
+  correspondent: 42,
+  tags: [3, 7],
+});
 
-1. Update `docs/paperless-rest-api.yaml` with the latest Paperless-ngx schema.
-2. Run `pnpm run generate` to refresh generated types.
-3. Implement resource changes in `src/resources` and add tests in `tests/`.
-4. Execute `pnpm run test:run` and `pnpm run typecheck`.
-5. Build the package via `pnpm run build`.
+console.log(`Queued for ingestion with id ${ingestionId}`);
+```
 
-## License
+### Add a tag to a document
 
-MIT
+```ts
+const documentId = 1337;
+const tagIdToAdd = 7;
+
+const current = await client.documents.retrieve(documentId);
+const currentTags = current.tags ?? [];
+
+const updated = await client.documents.partialUpdate(documentId, {
+  tags: Array.from(new Set([...currentTags, tagIdToAdd])),
+});
+
+console.log(`Document ${updated.id} now has tags ${updated.tags?.join(', ')}`);
+```
+
+### List documents by correspondent
+
+```ts
+const correspondentId = 12;
+
+const { results: fromCorrespondent } = await client.documents.list({
+  correspondent__id: correspondentId,
+  ordering: '-created',
+});
+
+fromCorrespondent.forEach(doc => {
+  console.log(`[${doc.created}] ${doc.title}`);
+});
+```
+
+## Extended documentation
+- Deepwiki: https://deepwiki.com/nielsmaerten/paperless-node
+- More example: [EXAMPLES.md](./EXAMPLES.md)
