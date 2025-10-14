@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write  # Required for OIDC
 
 jobs:
   release:
@@ -66,5 +67,3 @@ jobs:
           corepack enable
           pnpm install
           npm publish
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
