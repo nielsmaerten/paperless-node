@@ -1,5 +1,8 @@
 import type { AxiosError } from 'axios';
 
+/**
+ * Additional context returned by the Paperless API when requests fail.
+ */
 export interface PaperlessErrorContext {
   status?: number;
   url?: string;
@@ -9,6 +12,9 @@ export interface PaperlessErrorContext {
   cause?: unknown;
 }
 
+/**
+ * Error wrapper that normalizes failures produced when calling the Paperless API.
+ */
 export class PaperlessApiError extends Error {
   readonly status?: number;
   readonly url?: string;
@@ -16,6 +22,9 @@ export class PaperlessApiError extends Error {
   readonly data?: unknown;
   readonly headers?: Record<string, unknown>;
 
+  /**
+   * Creates a new {@link PaperlessApiError} from a human readable message and optional context.
+   */
   constructor(message: string, context: PaperlessErrorContext = {}) {
     super(message);
     this.name = 'PaperlessApiError';
@@ -29,6 +38,9 @@ export class PaperlessApiError extends Error {
     }
   }
 
+  /**
+   * Hydrates a {@link PaperlessApiError} from an Axios failure.
+   */
   static fromAxiosError(error: AxiosError): PaperlessApiError {
     const message = error.message || 'Unexpected Paperless API error';
     return new PaperlessApiError(message, {
@@ -41,6 +53,9 @@ export class PaperlessApiError extends Error {
     });
   }
 
+  /**
+   * Coerces any thrown value into a {@link PaperlessApiError}.
+   */
   static from(error: unknown): PaperlessApiError {
     if (isAxiosError(error)) {
       return PaperlessApiError.fromAxiosError(error);

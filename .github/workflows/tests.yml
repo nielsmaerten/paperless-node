@@ -21,3 +21,37 @@ jobs:
       - run: corepack enable
       - run: pnpm install
       - run: pnpm test
+
+  build_docs:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g corepack
+      - run: corepack enable
+      - run: pnpm install
+      - run: pnpm docs:build
+      - name: Commit docs changes
+        env:
+          DOCS_PATH: docs
+          BRANCH: main
+        run: |
+          if git diff --quiet HEAD -- "$DOCS_PATH"; then
+            echo "No docs changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$DOCS_PATH"
+          git commit -m "chore: update docs"
+          git push origin HEAD:$BRANCH
