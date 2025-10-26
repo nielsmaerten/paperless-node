@@ -1,6 +1,9 @@
 import { config as loadEnv, type DotenvConfigOptions } from 'dotenv';
 import type { PaperlessClientOptions } from '../core/paperlessClient.js';
 
+/**
+ * Configuration values that can be sourced from environment variables.
+ */
 export interface EnvConfig {
   baseURL?: string;
   token?: string;
@@ -8,10 +11,16 @@ export interface EnvConfig {
   headerName?: string;
 }
 
+/**
+ * Controls how environment variables are loaded before being read.
+ */
 export interface LoadEnvOptions {
   dotenv?: boolean | DotenvConfigOptions;
 }
 
+/**
+ * Loads environment variables relevant to the SDK and returns their parsed values.
+ */
 export const loadPaperlessEnv = ({ dotenv = true }: LoadEnvOptions = {}): EnvConfig => {
   if (dotenv) {
     const options = typeof dotenv === 'object' ? dotenv : undefined;
@@ -26,6 +35,9 @@ export const loadPaperlessEnv = ({ dotenv = true }: LoadEnvOptions = {}): EnvCon
   };
 };
 
+/**
+ * Builds {@link PaperlessClientOptions} by combining environment variables with explicit defaults.
+ */
 export const createOptionsFromEnv = (
   { defaults, dotenv }: LoadEnvOptions & { defaults?: Partial<PaperlessClientOptions> } = {},
 ): PaperlessClientOptions => {

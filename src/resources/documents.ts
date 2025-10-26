@@ -38,17 +38,32 @@ type DownloadOptions = {
 
 type UploadFile = Buffer | NodeJS.ReadableStream | Blob | string;
 
+/**
+ * Options accepted when uploading a new document, including the raw file content.
+ */
 export interface UploadDocumentOptions extends Omit<UploadDocumentRequest, 'document'> {
   document: UploadFile;
 }
 
+/**
+ * Client for interacting with the `/documents` endpoints.
+ */
 export class DocumentsResource {
+  /**
+   * @param http Shared HTTP client used to perform API calls.
+   */
   constructor(private readonly http: HttpClient) {}
 
+  /**
+   * Returns a single page of documents.
+   */
   list(query?: DocumentsListQuery): Promise<DocumentList> {
     return this.http.get<DocumentList>('/api/documents/', { params: query });
   }
 
+  /**
+   * Lazily iterates through every page of documents.
+   */
   async *iterate(query?: DocumentsListQuery): AsyncGenerator<Document, void, unknown> {
     yield* this.http.iteratePaginated<Document>({
       method: 'GET',
@@ -57,6 +72,9 @@ export class DocumentsResource {
     });
   }
 
+  /**
+   * Fetches every document eagerly by walking through all available pages.
+   */
   listAll(query?: DocumentsListQuery): Promise<Document[]> {
     return this.http.listAll<Document>({
       method: 'GET',
@@ -65,26 +83,41 @@ export class DocumentsResource {
     });
   }
 
+  /**
+   * Retrieves a single document by its numeric identifier.
+   */
   retrieve(id: DocumentPath['id'], query?: DocumentsRetrieveParams): Promise<Document> {
     const url = buildPath('/api/documents/{id}/', { id });
     return this.http.get<Document>(url, { params: query });
   }
 
+  /**
+   * Replaces a document with an updated payload.
+   */
   update(id: DocumentPath['id'], body: DocumentRequest): Promise<Document> {
     const url = buildPath('/api/documents/{id}/', { id });
     return this.http.put<Document, DocumentRequest>(url, body);
   }
 
+  /**
+   * Applies a partial update to an existing document.
+   */
   partialUpdate(id: DocumentPath['id'], body: DocumentPatch): Promise<Document> {
     const url = buildPath('/api/documents/{id}/', { id });
     return this.http.patch<Document, DocumentPatch>(url, body);
   }
 
+  /**
+   * Deletes a document permanently.
+   */
   remove(id: DocumentPath['id']): Promise<void> {
     const url = buildPath('/api/documents/{id}/', { id });
     return this.http.delete<void>(url);
   }
 
+  /**
+   * Uploads a new document using multipart form data.
+   */
   async upload(options: UploadDocumentOptions): Promise<string> {
     const form = new FormData();
     form.append('document', options.document as any);
@@ -123,6 +156,9 @@ export class DocumentsResource {
     });
   }
 
+  /**
+   * Downloads the binary document as either an `ArrayBuffer` or a streaming response.
+   */
   async download(
     id: DocumentPath['id'],
     { original, responseType = 'arraybuffer' }: DownloadOptions = {},
@@ -143,32 +179,50 @@ export class DocumentsResource {
     });
   }
 
+  /**
+   * Lists the audit history for a document.
+   */
   history(id: DocumentPath['id'], query?: DocumentsHistoryQuery): Promise<DocumentHistoryList> {
     const url = buildPath('/api/documents/{id}/history/', { id });
     return this.http.get<DocumentHistoryList>(url, { params: query });
   }
 
+  /**
+   * Retrieves notes for a document with optional pagination controls.
+   */
   notes(id: DocumentPath['id'], query?: DocumentsNotesQuery): Promise<DocumentNotesList> {
     const url = buildPath('/api/documents/{id}/notes/', { id });
     return this.http.get<DocumentNotesList>(url, { params: query });
   }
 
+  /**
+   * Adds a new note to the specified document.
+   */
   addNote(id: DocumentPath['id'], body: DocumentsNotesCreateBody): Promise<DocumentNotesList> {
     const url = buildPath('/api/documents/{id}/notes/', { id });
     return this.http.post<DocumentNotesList, DocumentsNotesCreateBody>(url, body);
   }
 
+  /**
+   * Removes the provided note from the document.
+   */
   removeNote(id: DocumentPath['id'], noteId: number): Promise<DocumentNotesList> {
     const url = buildPath('/api/documents/{id}/notes/', { id });
     const params: PaginatedNotesParams = { id: noteId };
     return this.http.delete<DocumentNotesList>(url, { params });
   }
 
+  /**
+   * Sends the document by email using the server-side mailer.
+   */
   sendByEmail(id: DocumentPath['id'], body: NonUndefined<OperationRequestBody<'documents_email_create'>>): Promise<DocumentEmailResponse> {
     const url = buildPath('/api/documents/{id}/email/', { id });
     return this.http.post<DocumentEmailResponse, typeof body>(url, body);
   }
 
+  /**
+   * Fetches selection helper data (such as tags or correspondents) to assist upload flows.
+   */
   selectionData(body: NonUndefined<OperationRequestBody<'documents_selection_data_create'>>): Promise<DocumentSelectionData> {
     return this.http.post<DocumentSelectionData, typeof body>('/api/documents/selection_data/', body);
   }
